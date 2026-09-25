@@ -1,0 +1,22 @@
+# ---------------------------------------------------------------
+# Use este arquivo SOMENTE se você subir o projeto inteiro dentro
+# da pasta pública da KingHost (www / public_html) e não puder
+# apontar o domínio para a pasta "public".
+# Ele envia tudo para /public e bloqueia acesso a arquivos internos.
+# (A opção mais segura está descrita no LEIA-ME.md)
+# ---------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Bloqueia arquivos sensíveis
+    RewriteRule ^(\.env|composer\.(json|lock)|artisan|README.*|LEIA-ME.*) - [F,L,NC]
+    RewriteRule ^(app|bootstrap|config|database|lang|resources|routes|storage|vendor|tests)(/|$) - [F,L,NC]
+
+    # Não reescreve o que já aponta para /public
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>

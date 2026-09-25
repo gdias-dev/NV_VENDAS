@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* Escaneia as views para gerar só o CSS necessário */
+@source "../views/**/*.blade.php";
+
+@theme {
+    /* Cores extraídas da logo Nova Varonil */
+    --color-brand-purple: #3e4095;
+    --color-brand-cyan: #00afef;
+    --color-brand-navy: #12306d;
+    --color-brand-green: #2a833f;
+    --color-ink: #201e1e;
+    --color-mist: #f4f8fc;
+    --color-line: #e2e8f0;
+
+    --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-display: "Montserrat", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+    --shadow-soft: 0 10px 30px -12px rgb(18 48 109 / 0.25);
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+    body {
+        @apply bg-white font-sans text-ink antialiased;
+    }
+    h1, h2, h3, h4 {
+        @apply font-display tracking-tight;
+    }
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-brand-cyan;
+    }
+}
+
+@layer components {
+    .container-x {
+        @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+    }
+    .section {
+        @apply py-16 sm:py-20;
+    }
+    .eyebrow {
+        @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-brand-purple;
+    }
+    .eyebrow::before {
+        content: "";
+        @apply h-0.5 w-6 rounded bg-brand-cyan;
+    }
+    .title {
+        @apply text-3xl font-extrabold text-brand-navy sm:text-4xl;
+    }
+    .lead {
+        @apply text-lg leading-relaxed text-slate-600;
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition duration-200 focus-visible:outline-2;
+    }
+    .btn-primary {
+        @apply bg-brand-navy text-white shadow-soft hover:-translate-y-0.5 hover:bg-brand-purple;
+    }
+    .btn-outline {
+        @apply border-2 border-brand-navy/20 bg-white text-brand-navy hover:border-brand-navy hover:bg-brand-navy/5;
+    }
+    .btn-light {
+        @apply bg-white text-brand-navy hover:-translate-y-0.5 hover:bg-mist;
+    }
+    .btn-whats {
+        @apply bg-brand-green text-white hover:-translate-y-0.5 hover:brightness-110;
+    }
+
+    .card {
+        @apply rounded-2xl border border-line bg-white p-6 shadow-sm transition duration-200;
+    }
+    .card-hover {
+        @apply hover:-translate-y-1 hover:border-brand-cyan/50 hover:shadow-soft;
+    }
+    .icon-wrap {
+        @apply grid h-12 w-12 place-items-center rounded-xl bg-brand-cyan/10 text-brand-purple;
+    }
+
+    .nav-link {
+        @apply rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-mist hover:text-brand-navy;
+    }
+    .nav-link[aria-current="page"] {
+        @apply bg-mist text-brand-navy;
+    }
+
+    .field {
+        @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-ink shadow-sm transition placeholder:text-slate-400 focus:border-brand-cyan focus:outline-none focus:ring-4 focus:ring-brand-cyan/20;
+    }
+    .label {
+        @apply mb-1.5 block text-sm font-semibold text-slate-700;
+    }
+    .error-text {
+        @apply mt-1 text-xs font-medium text-red-600;
+    }
+}
+
+/* Faixa decorativa com as cores da marca */
+.brand-bar {
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-brand-purple) 0 33%, var(--color-brand-cyan) 33% 66%, var(--color-brand-green) 66% 100%);
+}
+
+/* Revelar ao rolar */
+.reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.is-visible {
+    opacity: 1;
+    transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    .reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+    html {
+        scroll-behavior: auto;
+    }
+}
+.no-js .reveal {
+    opacity: 1;
+    transform: none;
+}
+
+/* FAQ */
+details > summary {
+    list-style: none;
+}
+details > summary::-webkit-details-marker {
+    display: none;
+}
+details[open] .chev {
+    transform: rotate(180deg);
+}

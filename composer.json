@@ -1,0 +1,43 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "novavaronil/portal",
+    "type": "project",
+    "description": "Site e portal de pedidos do Laboratório Óptico Nova Varonil.",
+    "keywords": ["laravel", "nova-varonil", "laboratorio-optico"],
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.0",
+        "filament/filament": "^3.3",
+        "laravel/framework": "^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "platform": {
+            "php": "8.2.0"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
