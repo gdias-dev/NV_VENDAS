@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PedidoResource\Pages;
 use App\Models\Pedido;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
@@ -215,6 +216,37 @@ class PedidoResource extends Resource
                         ->label('Tratamentos')
                         ->listWithLineBreaks()
                         ->placeholder('Nenhum')
+                        ->columnSpanFull(),
+                ]),
+
+            InfolistSection::make('Armação')
+                ->columns(2)
+                ->visible(fn (Pedido $record): bool => $record->temDadosArmacao())
+                ->schema([
+                    TextEntry::make('montagem_formato_armacao')
+                        ->label('Formato')
+                        ->formatStateUsing(fn (?string $state): string => $state && $state !== Pedido::FORMATO_UPLOAD ? (Pedido::FORMATOS_ARMACAO[$state] ?? $state) : 'Foto enviada')
+                        ->placeholder('—'),
+                    TextEntry::make('montagem_clipon')
+                        ->label('Clip-on')
+                        ->formatStateUsing(fn (?string $state): string => $state ? (Pedido::CLIPON_OPTIONS[$state] ?? $state) : '—'),
+                    TextEntry::make('montagem_mva')->label('MVA')->suffix(' mm')->placeholder('—'),
+                    TextEntry::make('montagem_mha')->label('MHA')->suffix(' mm')->placeholder('—'),
+                    TextEntry::make('montagem_dma')->label('DMA')->suffix(' mm')->placeholder('—'),
+                    TextEntry::make('montagem_ponte')->label('Ponte')->suffix(' mm')->placeholder('—'),
+                    TextEntry::make('montagem_dpa')->label('DPA')->suffix(' mm')->placeholder('—'),
+                    TextEntry::make('diametro_estimado')
+                        ->label('Diâmetro estimado')
+                        ->state(fn (Pedido $record): string => ($record->montagem_diametro_od || $record->montagem_diametro_oe)
+                            ? 'O.D. '.($record->montagem_diametro_od ?? '—').' mm · O.E. '.($record->montagem_diametro_oe ?? '—').' mm'
+                            : '—'),
+                    TextEntry::make('montagem_enviar_armacao')
+                        ->label('Armação enviada para montagem')
+                        ->formatStateUsing(fn (bool $state): string => $state ? 'Sim' : 'Não'),
+                    ImageEntry::make('montagem_foto_armacao')
+                        ->label('Foto da armação')
+                        ->disk('public')
+                        ->visible(fn (Pedido $record): bool => (bool) $record->montagem_foto_armacao)
                         ->columnSpanFull(),
                 ]),
 

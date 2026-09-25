@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Throwable;
 
 /**
@@ -24,6 +26,8 @@ use Throwable;
  */
 class AssistentePedido extends Component
 {
+    use WithFileUploads;
+
     protected const TOTAL_PASSOS = 6;
 
     public int $step = 1;
@@ -51,6 +55,15 @@ class AssistentePedido extends Component
     // Passo 5 — montagem.
     public bool $comMontagem = false;
     public ?string $montagemObservacoes = null;
+    public ?string $montagemFormatoArmacao = null;
+    public $montagemFotoArmacao = null;
+    public ?string $montagemMva = null;
+    public ?string $montagemMha = null;
+    public ?string $montagemDma = null;
+    public ?string $montagemPonte = null;
+    public ?string $montagemDpa = null;
+    public string $montagemClipon = Pedido::CLIPON_NAO_INFORMADO;
+    public bool $montagemEnviarArmacao = false;
 
     // Resultado, após confirmar.
     public bool $pedidoCriado = false;
@@ -124,6 +137,15 @@ class AssistentePedido extends Component
             ],
             5 => [
                 'montagemObservacoes' => ['nullable', 'string', 'max:500'],
+                'montagemFormatoArmacao' => ['nullable', 'string', Rule::in(array_keys(Pedido::FORMATOS_ARMACAO))],
+                'montagemFotoArmacao' => ['nullable', 'image', 'max:5120'],
+                'montagemMva' => ['nullable', 'numeric', 'between:0,80'],
+                'montagemMha' => ['nullable', 'numeric', 'between:0,80'],
+                'montagemDma' => ['nullable', 'numeric', 'between:0,80'],
+                'montagemPonte' => ['nullable', 'numeric', 'between:0,40'],
+                'montagemDpa' => ['nullable', 'numeric', 'between:0,40'],
+                'montagemClipon' => ['nullable', 'string', Rule::in(array_keys(Pedido::CLIPON_OPTIONS))],
+                'montagemEnviarArmacao' => ['boolean'],
             ],
             default => [],
         };
@@ -244,6 +266,26 @@ class AssistentePedido extends Component
         return ($valor === null || $valor === '') ? null : $valor;
     }
 
+    /**
+     * Estimativa simples do diâmetro mínimo da lente, a partir da DMA (diagonal
+     * maior da armação) informada, ou da MHA (largura) se a DMA não vier
+     * preenchida. É só uma ajuda para a montagem — o laboratório sempre confere
+     * antes de cortar a lente.
+     */
+    #[Computed]
+    public function diametroEstimado(): array
+    {
+        $dma = $this->montagemDma !== null && $this->montagemDma !== '' ? (float) $this->montagemDma : null;
+        $mha = $this->montagemMha !== null && $this->montagemMha !== '' ? (float) $this->montagemMha : null;
+
+        $estimado = $dma ?? $mha;
+
+        return [
+            'od' => $estimado,
+            'oe' => $estimado,
+        ];
+    }
+
     public function confirmar(): void
     {
         $regras = array_merge(
@@ -264,8 +306,17 @@ class AssistentePedido extends Component
 
         $resumo = $this->resumo;
         $lente = $this->lenteSelecionada;
+        $diametro = $this->diametroEstimado;
 
-        $pedido = DB::transaction(function () use ($otica, $resumo, $lente) {
+        // Sobe a foto da armação (se veio uma) fora da transação, já que é um
+        // upload de arquivo, não uma operação de banco.
+        $fotoArmacao = null;
+
+        if ($this->comMontagem && $this->montagemFormatoArmacao === Pedido::FORMATO_UPLOAD && $this->montagemFotoArmacao) {
+            $fotoArmacao = $this->montagemFotoArmacao->store('armacoes', 'public');
+        }
+
+        $pedido = DB::transaction(function () use ($otica, $resumo, $lente, $diametro, $fotoArmacao) {
             $pedido = Pedido::create([
                 'otica_id' => $otica->id,
                 'cliente_nome' => $this->clienteNome,
@@ -283,6 +334,17 @@ class AssistentePedido extends Component
                 'oe_adicao' => $this->valorOuNulo($this->oeAdicao),
                 'com_montagem' => $this->comMontagem,
                 'montagem_observacoes' => $this->comMontagem ? $this->montagemObservacoes : null,
+                'montagem_formato_armacao' => $this->comMontagem ? $this->montagemFormatoArmacao : null,
+                'montagem_foto_armacao' => $this->comMontagem ? $fotoArmacao : null,
+                'montagem_mva' => $this->comMontagem ? $this->valorOuNulo($this->montagemMva) : null,
+                'montagem_mha' => $this->comMontagem ? $this->valorOuNulo($this->montagemMha) : null,
+                'montagem_dma' => $this->comMontagem ? $this->valorOuNulo($this->montagemDma) : null,
+                'montagem_ponte' => $this->comMontagem ? $this->valorOuNulo($this->montagemPonte) : null,
+                'montagem_dpa' => $this->comMontagem ? $this->valorOuNulo($this->montagemDpa) : null,
+                'montagem_diametro_od' => $this->comMontagem ? $diametro['od'] : null,
+                'montagem_diametro_oe' => $this->comMontagem ? $diametro['oe'] : null,
+                'montagem_clipon' => $this->comMontagem ? $this->montagemClipon : null,
+                'montagem_enviar_armacao' => $this->comMontagem ? $this->montagemEnviarArmacao : false,
                 'preco_lente_od' => $resumo['preco_lente_od'],
                 'preco_lente_oe' => $resumo['preco_lente_oe'],
                 'preco_tratamentos' => $resumo['preco_tratamentos'],

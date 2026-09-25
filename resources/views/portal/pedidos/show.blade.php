@@ -72,6 +72,44 @@
                     </div>
                 @endif
 
+                @if ($pedido->temDadosArmacao())
+                    <div class="mt-6">
+                        <p class="text-xs font-extrabold uppercase tracking-wider text-brand-navy">Armação</p>
+                        <div class="mt-2 grid gap-4 sm:grid-cols-2">
+                            <dl class="space-y-1 text-sm text-slate-600">
+                                @if ($pedido->montagem_formato_armacao && $pedido->montagem_formato_armacao !== \App\Models\Pedido::FORMATO_UPLOAD)
+                                    <div><span class="text-slate-500">Formato:</span> {{ $pedido->formatoArmacaoLabel() }}</div>
+                                @endif
+                                @if ($pedido->montagem_mva)
+                                    <div><span class="text-slate-500">MVA:</span> {{ $pedido->montagem_mva }} mm</div>
+                                @endif
+                                @if ($pedido->montagem_mha)
+                                    <div><span class="text-slate-500">MHA:</span> {{ $pedido->montagem_mha }} mm</div>
+                                @endif
+                                @if ($pedido->montagem_dma)
+                                    <div><span class="text-slate-500">DMA:</span> {{ $pedido->montagem_dma }} mm</div>
+                                @endif
+                                @if ($pedido->montagem_ponte)
+                                    <div><span class="text-slate-500">Ponte:</span> {{ $pedido->montagem_ponte }} mm</div>
+                                @endif
+                                @if ($pedido->montagem_dpa)
+                                    <div><span class="text-slate-500">DPA:</span> {{ $pedido->montagem_dpa }} mm</div>
+                                @endif
+                                @if ($pedido->montagem_diametro_od || $pedido->montagem_diametro_oe)
+                                    <div><span class="text-slate-500">Diâmetro estimado:</span> O.D. {{ $pedido->montagem_diametro_od ?? '—' }} mm · O.E. {{ $pedido->montagem_diametro_oe ?? '—' }} mm</div>
+                                @endif
+                                @if ($pedido->montagem_clipon)
+                                    <div><span class="text-slate-500">Clip-on:</span> {{ $pedido->cliponLabel() }}</div>
+                                @endif
+                                <div><span class="text-slate-500">Armação enviada para montagem:</span> {{ $pedido->montagem_enviar_armacao ? 'Sim' : 'Não' }}</div>
+                            </dl>
+                            @if ($pedido->montagem_foto_armacao)
+                                <img src="{{ asset('storage/'.$pedido->montagem_foto_armacao) }}" alt="Foto da armação" class="h-32 w-auto rounded-lg border border-slate-200 object-cover">
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
                 @if ($pedido->observacoes)
                     <div class="mt-6">
                         <p class="text-xs font-extrabold uppercase tracking-wider text-brand-navy">Observações do laboratório</p>

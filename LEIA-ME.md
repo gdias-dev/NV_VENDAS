@@ -77,6 +77,48 @@ resources/views/filament/pages/relatorio-financeiro.blade.php
 A ação "Registrar pagamento" e a seção "Financeiro" ficam no mesmo
 `PedidoResource` das etapas anteriores.
 
+## 6. Adição: formato e medidas da armação, na montagem
+
+Depois da Etapa 6, foi adicionado um reforço no passo de montagem do assistente de
+pedido (Etapa 4), para ajudar o laboratório na hora de montar a lente.
+
+**Atualizar o projeto**: baixe este zip por cima da pasta do projeto (não precisa de
+`composer update`) e rode:
+
+```bash
+php artisan migrate
+php artisan storage:link
+```
+
+O `storage:link` só precisa ser rodado **uma vez** (se você já rodou antes, não tem
+problema rodar de novo, não dá erro). Ele é o que faz as fotos de armação enviadas
+pelas óticas aparecerem certinho no navegador e no PDF.
+
+**O que mudou**: quando a ótica marca **"Quero montagem"** no pedido, agora aparecem
+campos extras (sempre opcionais — se a ótica não preencher, o pedido continua sendo
+enviado normalmente):
+
+- **Formato da armação**: uma lista para escolher o formato (quadrada, aviador,
+  redonda, etc.), ou a opção de **enviar uma foto da armação** em vez de escolher.
+- **Medidas da armação**: MVA, MHA, DMA, Ponte e DPA (em mm) — e um **diâmetro
+  estimado** calculado a partir da DMA (ou da MHA, se a DMA não vier preenchida).
+  É só uma estimativa para ajudar; o laboratório sempre confere antes de cortar a
+  lente.
+- **Clip-on**: Não / Sim / Não informado.
+- Um marcador se **a armação será enviada** junto para a montagem.
+
+Tudo isso aparece na tela de detalhe do pedido (para a ótica), no detalhe do pedido
+no painel administrativo (nova seção "Armação") e na ordem de serviço em PDF.
+
+**Testar**: no portal da ótica, faça um novo pedido marcando "Quero montagem" e
+preenchendo os campos novos (inclusive testando o envio de uma foto). Confira se
+aparece certinho no detalhe do pedido, no painel administrativo e no PDF.
+
+**Publicar na KingHost**: depois de subir os arquivos novos e rodar
+`php artisan migrate --force`, rode também `php artisan storage:link` no servidor
+(se tiver acesso SSH). Se não tiver SSH na KingHost, me avise — nesse caso, o link
+simbólico às vezes precisa ser criado de outro jeito, e eu te ajudo a resolver.
+
 ## Próximas etapas
 
 7. Deploy final e ajustes

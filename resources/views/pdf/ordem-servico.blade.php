@@ -234,6 +234,52 @@
         </table>
     </div>
 
+    @if ($pedido->temDadosArmacao())
+        <div class="secao">
+            <div class="secao-titulo">Armação</div>
+            <table class="dados">
+                @if ($pedido->montagem_formato_armacao && $pedido->montagem_formato_armacao !== \App\Models\Pedido::FORMATO_UPLOAD)
+                    <tr>
+                        <td class="rotulo">Formato</td>
+                        <td>{{ $pedido->formatoArmacaoLabel() }}</td>
+                    </tr>
+                @endif
+                @if ($pedido->montagem_mva || $pedido->montagem_mha || $pedido->montagem_dma || $pedido->montagem_ponte || $pedido->montagem_dpa)
+                    <tr>
+                        <td class="rotulo">Medidas</td>
+                        <td>
+                            @if ($pedido->montagem_mva) MVA {{ $pedido->montagem_mva }} mm @endif
+                            @if ($pedido->montagem_mha) &nbsp;·&nbsp; MHA {{ $pedido->montagem_mha }} mm @endif
+                            @if ($pedido->montagem_dma) &nbsp;·&nbsp; DMA {{ $pedido->montagem_dma }} mm @endif
+                            @if ($pedido->montagem_ponte) &nbsp;·&nbsp; Ponte {{ $pedido->montagem_ponte }} mm @endif
+                            @if ($pedido->montagem_dpa) &nbsp;·&nbsp; DPA {{ $pedido->montagem_dpa }} mm @endif
+                        </td>
+                    </tr>
+                @endif
+                @if ($pedido->montagem_diametro_od || $pedido->montagem_diametro_oe)
+                    <tr>
+                        <td class="rotulo">Diâmetro estimado</td>
+                        <td>O.D. {{ $pedido->montagem_diametro_od ?? '—' }} mm · O.E. {{ $pedido->montagem_diametro_oe ?? '—' }} mm</td>
+                    </tr>
+                @endif
+                @if ($pedido->montagem_clipon)
+                    <tr>
+                        <td class="rotulo">Clip-on</td>
+                        <td>{{ $pedido->cliponLabel() }}</td>
+                    </tr>
+                @endif
+                <tr>
+                    <td class="rotulo">Armação enviada</td>
+                    <td>{{ $pedido->montagem_enviar_armacao ? 'Sim' : 'Não' }}</td>
+                </tr>
+            </table>
+
+            @if ($pedido->montagem_foto_armacao && \Illuminate\Support\Facades\Storage::disk('public')->exists($pedido->montagem_foto_armacao))
+                <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->path($pedido->montagem_foto_armacao) }}" alt="Foto da armação" style="margin-top: 8px; max-height: 140px; border: 1px solid #d8dee8; border-radius: 6px;">
+            @endif
+        </div>
+    @endif
+
     <div class="secao">
         <div class="secao-titulo">Valores</div>
         <table class="valores">

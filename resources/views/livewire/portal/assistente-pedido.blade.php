@@ -174,6 +174,109 @@
                             <textarea id="montagemObservacoes" wire:model="montagemObservacoes" rows="3" class="field" placeholder="Ex.: tipo de armação, medidas, alguma observação para a produção..."></textarea>
                             @error('montagemObservacoes') <p class="error-text">{{ $message }}</p> @enderror
                         </div>
+
+                        {{-- Formato ou foto da armação --}}
+                        <div>
+                            <p class="text-xs font-extrabold uppercase tracking-wider text-brand-navy">Formato da armação (opcional)</p>
+                            <p class="mt-1 text-sm text-slate-600">Isso ajuda o laboratório na montagem. Se preferir, mande uma foto em vez de escolher o formato.</p>
+
+                            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                                @foreach (\App\Models\Pedido::FORMATOS_ARMACAO as $chave => $rotulo)
+                                    @if ($chave !== \App\Models\Pedido::FORMATO_UPLOAD)
+                                        <label class="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 p-3 text-center transition
+                                            {{ $montagemFormatoArmacao === $chave ? 'border-brand-purple bg-brand-purple/5' : 'border-slate-200 hover:border-brand-purple/40' }}">
+                                            <input type="radio" wire:model.live="montagemFormatoArmacao" value="{{ $chave }}" class="sr-only">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-8 w-8 text-brand-navy">
+                                                <path d="M2 12c1-3 3-4 5-4s4 1 5 3c1-2 3-3 5-3s4 1 5 4" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <circle cx="6.5" cy="13.5" r="3.5"/>
+                                                <circle cx="17.5" cy="13.5" r="3.5"/>
+                                            </svg>
+                                            <span class="text-xs font-semibold text-slate-700">{{ $rotulo }}</span>
+                                        </label>
+                                    @endif
+                                @endforeach
+                            </div>
+
+                            <label class="mt-3 flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-4 transition
+                                {{ $montagemFormatoArmacao === \App\Models\Pedido::FORMATO_UPLOAD ? 'border-brand-purple bg-brand-purple/5' : 'border-slate-200 hover:border-brand-purple/40' }}">
+                                <input type="radio" wire:model.live="montagemFormatoArmacao" value="{{ \App\Models\Pedido::FORMATO_UPLOAD }}" class="h-4 w-4 accent-brand-purple">
+                                <span class="font-semibold text-brand-navy">Enviar foto da armação (em vez de escolher o formato)</span>
+                            </label>
+                            @error('montagemFormatoArmacao') <p class="error-text">{{ $message }}</p> @enderror
+
+                            @if ($montagemFormatoArmacao === \App\Models\Pedido::FORMATO_UPLOAD)
+                                <div class="mt-3">
+                                    <input type="file" wire:model="montagemFotoArmacao" accept="image/*" class="field">
+                                    <div wire:loading wire:target="montagemFotoArmacao" class="mt-1 text-xs text-slate-500">Enviando foto...</div>
+                                    @error('montagemFotoArmacao') <p class="error-text">{{ $message }}</p> @enderror
+                                    @if ($montagemFotoArmacao)
+                                        <img src="{{ $montagemFotoArmacao->temporaryUrl() }}" alt="Foto da armação" class="mt-2 h-24 w-auto rounded-lg border border-slate-200 object-cover">
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Medidas da armação --}}
+                        <div>
+                            <p class="text-xs font-extrabold uppercase tracking-wider text-brand-navy">Medidas da armação (opcional)</p>
+                            <div class="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                                <div>
+                                    <label for="montagemMva" class="label">MVA (mm)</label>
+                                    <input type="number" step="0.5" id="montagemMva" wire:model.live="montagemMva" class="field">
+                                    @error('montagemMva') <p class="error-text">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label for="montagemMha" class="label">MHA (mm)</label>
+                                    <input type="number" step="0.5" id="montagemMha" wire:model.live="montagemMha" class="field">
+                                    @error('montagemMha') <p class="error-text">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label for="montagemDma" class="label">DMA (mm)</label>
+                                    <input type="number" step="0.5" id="montagemDma" wire:model.live="montagemDma" class="field">
+                                    @error('montagemDma') <p class="error-text">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label for="montagemPonte" class="label">Ponte (mm)</label>
+                                    <input type="number" step="0.5" id="montagemPonte" wire:model="montagemPonte" class="field">
+                                    @error('montagemPonte') <p class="error-text">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label for="montagemDpa" class="label">DPA (mm)</label>
+                                    <input type="number" step="0.5" id="montagemDpa" wire:model="montagemDpa" class="field">
+                                    @error('montagemDpa') <p class="error-text">{{ $message }}</p> @enderror
+                                </div>
+                            </div>
+
+                            @php $diametroEstimado = $this->diametroEstimado; @endphp
+                            @if ($diametroEstimado['od'] || $diametroEstimado['oe'])
+                                <div class="mt-3 rounded-2xl bg-mist p-4 text-sm">
+                                    <p class="font-semibold text-brand-navy">
+                                        Diâmetro estimado: O.D. {{ $diametroEstimado['od'] ?? '—' }} mm · O.E. {{ $diametroEstimado['oe'] ?? '—' }} mm
+                                    </p>
+                                    <p class="mt-1 text-xs text-slate-500">Cálculo aproximado a partir da DMA (ou MHA) informada — o laboratório confere antes de montar.</p>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Clip-on e envio da armação --}}
+                        <div class="grid gap-6 sm:grid-cols-2">
+                            <div>
+                                <p class="text-xs font-extrabold uppercase tracking-wider text-brand-navy">Armação é clip-on?</p>
+                                <div class="mt-2 flex flex-wrap gap-4">
+                                    @foreach (\App\Models\Pedido::CLIPON_OPTIONS as $chave => $rotulo)
+                                        <label class="flex items-center gap-2 text-sm text-slate-700">
+                                            <input type="radio" wire:model="montagemClipon" value="{{ $chave }}" class="accent-brand-purple">
+                                            {{ $rotulo }}
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <label class="flex cursor-pointer items-center gap-3">
+                                <input type="checkbox" wire:model="montagemEnviarArmacao" class="h-4 w-4 accent-brand-purple">
+                                <span class="text-sm font-semibold text-brand-navy">A armação será enviada para a montagem</span>
+                            </label>
+                        </div>
                     @endif
                 </div>
             @endif
@@ -195,6 +298,14 @@
                         <dd class="font-semibold">{{ collect($resumo['tratamentos'])->pluck('nome')->join(', ') ?: 'Nenhum' }}</dd>
                     </div>
                     <div><dt class="text-slate-500">Montagem</dt><dd class="font-semibold">{{ $comMontagem ? 'Sim' : 'Não' }}</dd></div>
+                    @if ($comMontagem && $montagemFormatoArmacao)
+                        <div>
+                            <dt class="text-slate-500">Armação</dt>
+                            <dd class="font-semibold">
+                                {{ \App\Models\Pedido::FORMATOS_ARMACAO[$montagemFormatoArmacao] ?? $montagemFormatoArmacao }}
+                            </dd>
+                        </div>
+                    @endif
                 </dl>
 
                 <div class="mt-6 space-y-2 rounded-2xl bg-mist p-5 text-sm">
