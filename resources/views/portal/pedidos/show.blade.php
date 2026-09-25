@@ -110,6 +110,28 @@
                     </div>
                 @endif
 
+                @if ($pedido->temDadosProfissional())
+                    <div class="mt-6">
+                        <p class="text-xs font-extrabold uppercase tracking-wider text-brand-navy">Paciente e profissional</p>
+                        <dl class="mt-2 space-y-1 text-sm text-slate-600">
+                            <div>
+                                <span class="text-slate-500">Receita passada por:</span>
+                                {{ $pedido->tipoProfissionalLabel() }}
+                                @if ($pedido->profissional_nome) — {{ $pedido->profissional_nome }} @endif
+                                @if ($pedido->tipo_profissional === \App\Models\Pedido::TIPO_PROFISSIONAL_MEDICO && ($pedido->profissional_uf_crm || $pedido->profissional_crm))
+                                    (CRM {{ $pedido->profissional_uf_crm }} {{ $pedido->profissional_crm }})
+                                @endif
+                            </div>
+                            @if ($pedido->paciente_iniciais || $pedido->paciente_idade || $pedido->paciente_complemento)
+                                <div>
+                                    <span class="text-slate-500">Paciente:</span>
+                                    {{ collect([$pedido->paciente_iniciais, $pedido->paciente_idade ? $pedido->paciente_idade.' anos' : null, $pedido->paciente_complemento])->filter()->join(' · ') }}
+                                </div>
+                            @endif
+                        </dl>
+                    </div>
+                @endif
+
                 @if ($pedido->observacoes)
                     <div class="mt-6">
                         <p class="text-xs font-extrabold uppercase tracking-wider text-brand-navy">Observações do laboratório</p>

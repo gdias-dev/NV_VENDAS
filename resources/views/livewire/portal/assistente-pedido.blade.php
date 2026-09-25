@@ -16,7 +16,7 @@
     @else
         {{-- Indicador de progresso --}}
         <div class="mb-8 flex items-center justify-between gap-2">
-            @foreach (['Cliente', 'Receita', 'Lente', 'Tratamentos', 'Montagem', 'Resumo'] as $i => $rotulo)
+            @foreach (['Cliente', 'Receita', 'Lente', 'Tratamentos', 'Montagem', 'Profissional', 'Resumo'] as $i => $rotulo)
                 @php $numero = $i + 1; @endphp
                 <button
                     type="button"
@@ -281,8 +281,80 @@
                 </div>
             @endif
 
-            {{-- Passo 6: resumo --}}
+            {{-- Passo 6: paciente e profissional --}}
             @if ($step === 6)
+                <h2 class="text-xl font-bold text-brand-navy">Paciente e profissional</h2>
+                <p class="mt-1 text-sm text-slate-600">Dados de quem passou a receita e do paciente (tudo opcional, exceto o tipo).</p>
+
+                <div class="mt-6 space-y-6">
+                    <div>
+                        <p class="text-xs font-extrabold uppercase tracking-wider text-brand-navy">Quem passou a receita?</p>
+                        <div class="mt-2 flex flex-wrap gap-4">
+                            @foreach (\App\Models\Pedido::TIPOS_PROFISSIONAL as $chave => $rotulo)
+                                <label class="flex items-center gap-2 text-sm text-slate-700">
+                                    <input type="radio" wire:model.live="tipoProfissional" value="{{ $chave }}" class="accent-brand-purple">
+                                    {{ $rotulo }}
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('tipoProfissional') <p class="error-text">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        <div>
+                            <label for="profissionalNome" class="label">
+                                Nome d{{ $tipoProfissional === \App\Models\Pedido::TIPO_PROFISSIONAL_OPTOMETRISTA ? 'o optometrista' : 'o médico' }} (opcional)
+                            </label>
+                            <input type="text" id="profissionalNome" wire:model="profissionalNome" class="field">
+                            @error('profissionalNome') <p class="error-text">{{ $message }}</p> @enderror
+                        </div>
+
+                        @if ($tipoProfissional === \App\Models\Pedido::TIPO_PROFISSIONAL_MEDICO)
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="profissionalUfCrm" class="label">UF do CRM (opcional)</label>
+                                    <select id="profissionalUfCrm" wire:model="profissionalUfCrm" class="field">
+                                        <option value="">—</option>
+                                        @foreach (\App\Models\Pedido::UFS_BRASIL as $uf)
+                                            <option value="{{ $uf }}">{{ $uf }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('profissionalUfCrm') <p class="error-text">{{ $message }}</p> @enderror
+                                </div>
+                                <div>
+                                    <label for="profissionalCrm" class="label">CRM (opcional)</label>
+                                    <input type="text" id="profissionalCrm" wire:model="profissionalCrm" class="field">
+                                    @error('profissionalCrm') <p class="error-text">{{ $message }}</p> @enderror
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-extrabold uppercase tracking-wider text-brand-navy">Dados do paciente (opcional)</p>
+                        <div class="mt-3 grid gap-4 sm:grid-cols-3">
+                            <div>
+                                <label for="pacienteIniciais" class="label">Iniciais</label>
+                                <input type="text" id="pacienteIniciais" wire:model="pacienteIniciais" class="field" maxlength="10">
+                                @error('pacienteIniciais') <p class="error-text">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label for="pacienteIdade" class="label">Idade</label>
+                                <input type="number" step="1" min="0" max="120" id="pacienteIdade" wire:model="pacienteIdade" class="field">
+                                @error('pacienteIdade') <p class="error-text">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label for="pacienteComplemento" class="label">Complemento</label>
+                                <input type="text" id="pacienteComplemento" wire:model="pacienteComplemento" class="field">
+                                @error('pacienteComplemento') <p class="error-text">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Passo 7: resumo --}}
+            @if ($step === 7)
                 <h2 class="text-xl font-bold text-brand-navy">Resumo do pedido</h2>
                 <p class="mt-1 text-sm text-slate-600">Confira os dados antes de confirmar.</p>
 
@@ -303,6 +375,24 @@
                             <dt class="text-slate-500">Armação</dt>
                             <dd class="font-semibold">
                                 {{ \App\Models\Pedido::FORMATOS_ARMACAO[$montagemFormatoArmacao] ?? $montagemFormatoArmacao }}
+                            </dd>
+                        </div>
+                    @endif
+                    <div>
+                        <dt class="text-slate-500">Receita passada por</dt>
+                        <dd class="font-semibold">
+                            {{ \App\Models\Pedido::TIPOS_PROFISSIONAL[$tipoProfissional] ?? $tipoProfissional }}
+                            @if ($profissionalNome) — {{ $profissionalNome }} @endif
+                            @if ($tipoProfissional === \App\Models\Pedido::TIPO_PROFISSIONAL_MEDICO && ($profissionalUfCrm || $profissionalCrm))
+                                (CRM {{ $profissionalUfCrm }} {{ $profissionalCrm }})
+                            @endif
+                        </dd>
+                    </div>
+                    @if ($pacienteIniciais || $pacienteIdade || $pacienteComplemento)
+                        <div>
+                            <dt class="text-slate-500">Paciente</dt>
+                            <dd class="font-semibold">
+                                {{ collect([$pacienteIniciais, $pacienteIdade ? $pacienteIdade.' anos' : null, $pacienteComplemento])->filter()->join(' · ') }}
                             </dd>
                         </div>
                     @endif
@@ -334,7 +424,7 @@
                     <span></span>
                 @endif
 
-                @if ($step < 6)
+                @if ($step < 7)
                     <button type="button" wire:click="proximo" class="btn btn-primary">Continuar</button>
                 @else
                     <button type="button" wire:click="confirmar" wire:loading.attr="disabled" class="btn btn-primary">

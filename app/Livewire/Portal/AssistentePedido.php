@@ -20,15 +20,15 @@ use Livewire\WithFileUploads;
 use Throwable;
 
 /**
- * Assistente de pedido, em 6 passos: identificação do cliente, receita,
- * lente, tratamentos, montagem e resumo com o preço calculado
- * automaticamente a partir da tabela de preço da ótica logada.
+ * Assistente de pedido, em 7 passos: identificação do cliente, receita,
+ * lente, tratamentos, montagem, paciente/profissional e resumo com o preço
+ * calculado automaticamente a partir da tabela de preço da ótica logada.
  */
 class AssistentePedido extends Component
 {
     use WithFileUploads;
 
-    protected const TOTAL_PASSOS = 6;
+    protected const TOTAL_PASSOS = 7;
 
     public int $step = 1;
 
@@ -64,6 +64,15 @@ class AssistentePedido extends Component
     public ?string $montagemDpa = null;
     public string $montagemClipon = Pedido::CLIPON_NAO_INFORMADO;
     public bool $montagemEnviarArmacao = false;
+
+    // Passo 6 — paciente e profissional que passou a receita.
+    public string $tipoProfissional = Pedido::TIPO_PROFISSIONAL_MEDICO;
+    public ?string $profissionalNome = null;
+    public ?string $profissionalUfCrm = null;
+    public ?string $profissionalCrm = null;
+    public ?string $pacienteIniciais = null;
+    public ?string $pacienteIdade = null;
+    public ?string $pacienteComplemento = null;
 
     // Resultado, após confirmar.
     public bool $pedidoCriado = false;
@@ -146,6 +155,15 @@ class AssistentePedido extends Component
                 'montagemDpa' => ['nullable', 'numeric', 'between:0,40'],
                 'montagemClipon' => ['nullable', 'string', Rule::in(array_keys(Pedido::CLIPON_OPTIONS))],
                 'montagemEnviarArmacao' => ['boolean'],
+            ],
+            6 => [
+                'tipoProfissional' => ['required', 'string', Rule::in(array_keys(Pedido::TIPOS_PROFISSIONAL))],
+                'profissionalNome' => ['nullable', 'string', 'max:255'],
+                'profissionalUfCrm' => ['nullable', 'string', Rule::in(Pedido::UFS_BRASIL)],
+                'profissionalCrm' => ['nullable', 'string', 'max:20'],
+                'pacienteIniciais' => ['nullable', 'string', 'max:10'],
+                'pacienteIdade' => ['nullable', 'integer', 'between:0,120'],
+                'pacienteComplemento' => ['nullable', 'string', 'max:255'],
             ],
             default => [],
         };
@@ -294,6 +312,7 @@ class AssistentePedido extends Component
             $this->rulesParaPasso(3),
             $this->rulesParaPasso(4),
             $this->rulesParaPasso(5),
+            $this->rulesParaPasso(6),
         );
 
         $this->validate($regras, [], $this->labelsCampos());
@@ -332,6 +351,13 @@ class AssistentePedido extends Component
                 'oe_cilindrico' => $this->valorOuNulo($this->oeCilindrico),
                 'oe_eixo' => $this->valorOuNulo($this->oeEixo),
                 'oe_adicao' => $this->valorOuNulo($this->oeAdicao),
+                'tipo_profissional' => $this->tipoProfissional,
+                'profissional_nome' => $this->valorOuNulo($this->profissionalNome),
+                'profissional_uf_crm' => $this->tipoProfissional === Pedido::TIPO_PROFISSIONAL_MEDICO ? $this->valorOuNulo($this->profissionalUfCrm) : null,
+                'profissional_crm' => $this->tipoProfissional === Pedido::TIPO_PROFISSIONAL_MEDICO ? $this->valorOuNulo($this->profissionalCrm) : null,
+                'paciente_iniciais' => $this->valorOuNulo($this->pacienteIniciais),
+                'paciente_idade' => $this->valorOuNulo($this->pacienteIdade),
+                'paciente_complemento' => $this->valorOuNulo($this->pacienteComplemento),
                 'com_montagem' => $this->comMontagem,
                 'montagem_observacoes' => $this->comMontagem ? $this->montagemObservacoes : null,
                 'montagem_formato_armacao' => $this->comMontagem ? $this->montagemFormatoArmacao : null,

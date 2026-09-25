@@ -250,6 +250,23 @@ class PedidoResource extends Resource
                         ->columnSpanFull(),
                 ]),
 
+            InfolistSection::make('Paciente e profissional')
+                ->columns(2)
+                ->visible(fn (Pedido $record): bool => $record->temDadosProfissional())
+                ->schema([
+                    TextEntry::make('tipo_profissional')
+                        ->label('Receita passada por')
+                        ->formatStateUsing(fn (Pedido $record): string => $record->tipoProfissionalLabel()),
+                    TextEntry::make('profissional_nome')->label('Nome do profissional')->placeholder('—'),
+                    TextEntry::make('profissional_crm')
+                        ->label('CRM')
+                        ->formatStateUsing(fn (Pedido $record): string => $record->profissional_crm ? $record->profissional_uf_crm.' '.$record->profissional_crm : '—')
+                        ->visible(fn (Pedido $record): bool => $record->tipo_profissional === Pedido::TIPO_PROFISSIONAL_MEDICO),
+                    TextEntry::make('paciente_iniciais')->label('Iniciais do paciente')->placeholder('—'),
+                    TextEntry::make('paciente_idade')->label('Idade do paciente')->suffix(' anos')->placeholder('—'),
+                    TextEntry::make('paciente_complemento')->label('Complemento')->placeholder('—'),
+                ]),
+
             InfolistSection::make('Valores')
                 ->columns(2)
                 ->schema([

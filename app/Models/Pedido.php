@@ -69,6 +69,21 @@ class Pedido extends Model
         self::CLIPON_NAO_INFORMADO => 'Não informado',
     ];
 
+    public const TIPO_PROFISSIONAL_MEDICO = 'medico';
+    public const TIPO_PROFISSIONAL_OPTOMETRISTA = 'optometrista';
+
+    public const TIPOS_PROFISSIONAL = [
+        self::TIPO_PROFISSIONAL_MEDICO => 'Médico (oftalmologista)',
+        self::TIPO_PROFISSIONAL_OPTOMETRISTA => 'Optometrista',
+    ];
+
+    // UFs do Brasil, para o CRM do médico responsável pela receita.
+    public const UFS_BRASIL = [
+        'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO',
+        'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
+        'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+    ];
+
     protected $fillable = [
         'otica_id',
         'cliente_nome',
@@ -84,6 +99,13 @@ class Pedido extends Model
         'oe_cilindrico',
         'oe_eixo',
         'oe_adicao',
+        'tipo_profissional',
+        'profissional_nome',
+        'profissional_uf_crm',
+        'profissional_crm',
+        'paciente_iniciais',
+        'paciente_idade',
+        'paciente_complemento',
         'com_montagem',
         'montagem_observacoes',
         'montagem_formato_armacao',
@@ -120,6 +142,7 @@ class Pedido extends Model
             'oe_cilindrico' => 'decimal:2',
             'oe_eixo' => 'integer',
             'oe_adicao' => 'decimal:2',
+            'paciente_idade' => 'integer',
             'com_montagem' => 'boolean',
             'montagem_mva' => 'decimal:2',
             'montagem_mha' => 'decimal:2',
@@ -202,6 +225,26 @@ class Pedido extends Model
             || $this->montagem_dma
             || $this->montagem_ponte
             || $this->montagem_dpa
+        );
+    }
+
+    public function tipoProfissionalLabel(): string
+    {
+        return self::TIPOS_PROFISSIONAL[$this->tipo_profissional] ?? $this->tipo_profissional;
+    }
+
+    /**
+     * Se tem alguma informação de paciente/profissional preenchida, pra
+     * decidir se mostra essa seção ou não.
+     */
+    public function temDadosProfissional(): bool
+    {
+        return (bool) (
+            $this->profissional_nome
+            || $this->profissional_crm
+            || $this->paciente_iniciais
+            || $this->paciente_idade
+            || $this->paciente_complemento
         );
     }
 }

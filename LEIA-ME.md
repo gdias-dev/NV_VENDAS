@@ -119,6 +119,43 @@ aparece certinho no detalhe do pedido, no painel administrativo e no PDF.
 (se tiver acesso SSH). Se não tiver SSH na KingHost, me avise — nesse caso, o link
 simbólico às vezes precisa ser criado de outro jeito, e eu te ajudo a resolver.
 
+## 7. Adição: paciente e profissional da receita
+
+Depois da adição de armação, foi criado um **novo passo no assistente de pedido**
+(entre "Montagem" e "Resumo"), para registrar quem passou a receita e alguns
+dados do paciente.
+
+**Atualizar o projeto**: baixe este zip por cima da pasta do projeto (não precisa de
+`composer update`) e rode:
+
+```bash
+php artisan migrate
+```
+
+**O que mudou**: antes de mostrar o resumo final, o assistente agora pergunta
+(tudo opcional, exceto o tipo de profissional):
+
+- **Quem passou a receita**: Médico (oftalmologista) ou Optometrista.
+- **Nome do profissional** — o rótulo muda de acordo com a escolha acima.
+- **UF do CRM e CRM** — só aparece quando é "Médico", já que optometrista não
+  tem CRM.
+- **Dados do paciente**: iniciais, idade e complemento (um campo livre, para
+  qualquer observação extra sobre o paciente).
+
+Esses dados aparecem no resumo do pedido (assistente), na tela de detalhe do
+pedido (portal da ótica), no painel administrativo (nova seção "Paciente e
+profissional") e na ordem de serviço em PDF — sempre que algum desses campos
+for preenchido.
+
+**Testar**: no portal da ótica, faça um novo pedido e, no passo novo (antes do
+resumo), preencha os dados de profissional e paciente. Confira se aparece
+certinho no resumo, no detalhe do pedido, no painel administrativo e no PDF.
+Teste também deixando tudo em branco, pra confirmar que o pedido continua
+sendo enviado normalmente.
+
+**Publicar na KingHost**: os passos são os mesmos de sempre — depois de subir
+os arquivos novos, rode `php artisan migrate --force` no servidor.
+
 ## Próximas etapas
 
 7. Deploy final e ajustes

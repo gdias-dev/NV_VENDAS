@@ -280,6 +280,30 @@
         </div>
     @endif
 
+    @if ($pedido->temDadosProfissional())
+        <div class="secao">
+            <div class="secao-titulo">Paciente e profissional</div>
+            <table class="dados">
+                <tr>
+                    <td class="rotulo">Receita passada por</td>
+                    <td>
+                        {{ $pedido->tipoProfissionalLabel() }}
+                        @if ($pedido->profissional_nome) — {{ $pedido->profissional_nome }} @endif
+                        @if ($pedido->tipo_profissional === \App\Models\Pedido::TIPO_PROFISSIONAL_MEDICO && ($pedido->profissional_uf_crm || $pedido->profissional_crm))
+                            (CRM {{ $pedido->profissional_uf_crm }} {{ $pedido->profissional_crm }})
+                        @endif
+                    </td>
+                </tr>
+                @if ($pedido->paciente_iniciais || $pedido->paciente_idade || $pedido->paciente_complemento)
+                    <tr>
+                        <td class="rotulo">Paciente</td>
+                        <td>{{ collect([$pedido->paciente_iniciais, $pedido->paciente_idade ? $pedido->paciente_idade.' anos' : null, $pedido->paciente_complemento])->filter()->join(' · ') }}</td>
+                    </tr>
+                @endif
+            </table>
+        </div>
+    @endif
+
     <div class="secao">
         <div class="secao-titulo">Valores</div>
         <table class="valores">
