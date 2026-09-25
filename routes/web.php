@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\PedidoPdfController;
+use App\Http\Controllers\Admin\RelatorioFinanceiroController;
 use App\Http\Controllers\ContatoController;
 use App\Http\Controllers\PaginaController;
 use App\Http\Controllers\Portal\AuthController as PortalAuthController;
@@ -41,3 +42,8 @@ Route::get('/area-das-oticas/pedidos/{pedido}/pdf', [PortalPedidosController::cl
 Route::middleware('auth')
     ->get('/admin/pedidos/{pedido}/pdf', [PedidoPdfController::class, 'show'])
     ->name('admin.pedidos.pdf');
+
+// ---- Relatório financeiro (CSV), para quem está logado no painel administrativo ----
+Route::middleware('auth')
+    ->get('/admin/relatorios/csv', [RelatorioFinanceiroController::class, 'csv'])
+    ->name('admin.relatorios.csv');

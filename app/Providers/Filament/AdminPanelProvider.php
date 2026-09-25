@@ -38,9 +38,12 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->pages([
                 Pages\Dashboard::class,
+                \App\Filament\Pages\RelatorioFinanceiro::class,
             ])
             ->widgets([
                 Widgets\AccountWidget::class,
+                \App\Filament\Widgets\FaturamentoOverview::class,
+                \App\Filament\Widgets\FaturamentoPorDiaChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,

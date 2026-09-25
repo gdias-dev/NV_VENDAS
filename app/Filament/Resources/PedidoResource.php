@@ -76,6 +76,9 @@ class PedidoResource extends Resource
                     ->label('Valor')
                     ->money('BRL')
                     ->sortable(),
+                Tables\Columns\IconColumn::make('pago')
+                    ->label('Pago')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Recebido em')
                     ->dateTime('d/m/Y H:i')
@@ -90,6 +93,8 @@ class PedidoResource extends Resource
                     ->relationship('otica', 'nome_fantasia')
                     ->searchable()
                     ->preload(),
+                Tables\Filters\TernaryFilter::make('pago')
+                    ->label('Pagamento'),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -118,6 +123,38 @@ class PedidoResource extends Resource
                     ])
                     ->action(function (Pedido $record, array $data): void {
                         $record->update($data);
+                    }),
+                Tables\Actions\Action::make('pagamento')
+                    ->label(fn (Pedido $record): string => $record->pago ? 'Pagamento' : 'Registrar pagamento')
+                    ->icon('heroicon-o-banknotes')
+                    ->color(fn (Pedido $record): string => $record->pago ? 'success' : 'gray')
+                    ->form([
+                        Forms\Components\Toggle::make('pago')
+                            ->label('Pago')
+                            ->live(),
+                        Forms\Components\Select::make('forma_pagamento')
+                            ->label('Forma de pagamento')
+                            ->options(Pedido::FORMAS_PAGAMENTO)
+                            ->visible(fn (Forms\Get $get): bool => (bool) $get('pago'))
+                            ->required(fn (Forms\Get $get): bool => (bool) $get('pago')),
+                        Forms\Components\DatePicker::make('pago_em')
+                            ->label('Data do pagamento')
+                            ->default(now())
+                            ->visible(fn (Forms\Get $get): bool => (bool) $get('pago')),
+                    ])
+                    ->fillForm(fn (Pedido $record): array => [
+                        'pago' => $record->pago,
+                        'forma_pagamento' => $record->forma_pagamento,
+                        'pago_em' => $record->pago_em?->toDateString(),
+                    ])
+                    ->action(function (Pedido $record, array $data): void {
+                        $pago = (bool) ($data['pago'] ?? false);
+
+                        $record->update([
+                            'pago' => $pago,
+                            'forma_pagamento' => $pago ? ($data['forma_pagamento'] ?? null) : null,
+                            'pago_em' => $pago ? ($data['pago_em'] ?? now()->toDateString()) : null,
+                        ]);
                     }),
             ])
             ->bulkActions([]);
@@ -189,6 +226,23 @@ class PedidoResource extends Resource
                     TextEntry::make('preco_tratamentos')->label('Tratamentos')->money('BRL'),
                     TextEntry::make('preco_montagem')->label('Montagem')->money('BRL'),
                     TextEntry::make('preco_total')->label('Total')->money('BRL')->weight('bold')->columnSpanFull(),
+                ]),
+
+            InfolistSection::make('Financeiro')
+                ->columns(2)
+                ->schema([
+                    TextEntry::make('pago')
+                        ->label('Situação')
+                        ->badge()
+                        ->formatStateUsing(fn (bool $state): string => $state ? 'Pago' : 'Pendente')
+                        ->color(fn (bool $state): string => $state ? 'success' : 'warning'),
+                    TextEntry::make('forma_pagamento')
+                        ->label('Forma de pagamento')
+                        ->formatStateUsing(fn (?string $state): string => $state ? (Pedido::FORMAS_PAGAMENTO[$state] ?? $state) : '—'),
+                    TextEntry::make('pago_em')
+                        ->label('Data do pagamento')
+                        ->date('d/m/Y')
+                        ->placeholder('—'),
                 ]),
 
             InfolistSection::make('Observações internas')

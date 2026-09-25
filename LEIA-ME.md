@@ -4,34 +4,37 @@ Etapa 1: site público. Etapa 2: banco de dados e painel administrativo (Filamen
 Etapa 3: cadastro público e login das próprias óticas, com aprovação.
 Etapa 4: assistente de pedido, com cálculo automático de preço.
 Etapa 5: aviso por e-mail de mudança de status e PDF da ordem de serviço.
+Etapa 6: controle de pagamento, dashboard e relatório financeiro.
 
 ## 1. Atualizar o projeto
 
 Baixe este zip **por cima da pasta do projeto** (ele não inclui `vendor/` nem `.env`).
 
-Esta etapa adiciona **um pacote novo** (para gerar o PDF), então desta vez precisa
-rodar o `composer update`:
+Esta etapa **não adiciona pacotes novos** (não precisa rodar `composer update`), só
+uma migration nova. Rode, na pasta do projeto:
 
 ```bash
-php C:\composer\composer.phar update
+php artisan migrate
 ```
 
-(ou só `composer update`, se você já tiver colocado o Composer no PATH). Não tem
-migration nova nesta etapa.
+Isso adiciona os campos de pagamento (`pago`, `pago_em`, `forma_pagamento`) na
+tabela de pedidos.
 
 ## 2. O que mudou
 
-- **E-mail de status**: toda vez que o status de um pedido muda (você muda no painel
-  administrativo, em Pedidos → "Mudar status"), o sistema tenta avisar a ótica por
-  e-mail automaticamente — mesmo jeito best-effort das outras etapas (se o envio
-  falhar, a mudança de status é salva do mesmo jeito).
-- **PDF da ordem de serviço**: cada pedido agora tem um botão para gerar um PDF com
-  os dados completos — ótica, cliente, receita, lente, tratamentos, montagem e
-  valores. Esse botão aparece:
-  - No portal da ótica, na tela de detalhe do pedido e na lista "Meus pedidos"
-    (e também na tela de sucesso, assim que o pedido é confirmado).
-  - No painel administrativo, em Pedidos, tanto na lista quanto na tela de detalhe.
-  - O PDF abre numa aba nova do navegador (pode salvar ou imprimir direto de lá).
+- **Registrar pagamento**: cada pedido, no painel administrativo (Pedidos), agora
+  tem um botão **"Registrar pagamento"**. Você marca se está pago, escolhe a forma
+  (Dinheiro, Pix, Cartão, Boleto ou Outro) e a data — e isso fica salvo no pedido,
+  visível também na tela de detalhe (seção "Financeiro").
+- **Dashboard**: a tela inicial do painel administrativo (`/admin`) agora mostra:
+  - Três números do mês atual: **faturado**, **recebido** e **a receber** (pedidos
+    cancelados não entram nessas contas).
+  - Um gráfico de faturamento dos últimos 14 dias.
+- **Relatório financeiro**: novo item de menu, **Financeiro → Relatório financeiro**,
+  com filtro por período (data início/fim) e por ótica. Mostra o total faturado,
+  recebido, a receber, o ticket médio e um ranking de faturamento por ótica no
+  período escolhido. Tem um botão **"Exportar CSV"** que baixa essa lista para abrir
+  no Excel.
 
 ## 3. Testar localmente
 
@@ -39,43 +42,41 @@ migration nova nesta etapa.
 php artisan serve
 ```
 
-1. No painel administrativo (`/admin` → **Pedidos**), abra um pedido existente (ou
-   crie um novo pelo portal da ótica, como na Etapa 4) e clique em **"Mudar status"**.
-2. Veja em `storage/logs/laravel-AAAA-MM-DD.log` o e-mail de aviso da mudança de
-   status (com `MAIL_MAILER=log`, que é o padrão local).
-3. Clique no botão **"PDF"** (na lista de Pedidos ou na tela de detalhe) e confira
-   se o PDF abre certinho, com os dados do pedido.
-4. Faça o mesmo teste pelo lado da ótica: entre em `/area-das-oticas`, vá em
-   **"Meus pedidos"** e clique em **"PDF"** num pedido.
-
-Se o `composer update` reclamar de alguma extensão do PHP faltando (como aconteceu
-com o `intl`, na Etapa 2), o jeito de resolver é o mesmo: abrir o `php.ini` (descubra
-o caminho com `php --ini`) e descomentar a extensão pedida.
+1. No painel administrativo (`/admin` → **Pedidos**), abra um pedido e clique em
+   **"Registrar pagamento"**. Marque como pago, escolha a forma e confirme.
+2. Abra o detalhe do pedido (ícone de olho) e veja a seção **"Financeiro"** com a
+   situação atualizada.
+3. Volte para a tela inicial do painel (**Dashboard**, no menu) e veja os números do
+   mês e o gráfico dos últimos 14 dias.
+4. Vá em **Financeiro → Relatório financeiro**, mude as datas e a ótica no filtro, e
+   confira se os números batem. Clique em **"Exportar CSV"** e abra o arquivo
+   baixado.
 
 ## 4. Publicar na KingHost
 
-Os passos são os mesmos de antes (FileZilla, apontar para `public`, etc.). Como esta
-etapa tem um pacote novo, depois de subir os arquivos é preciso atualizar as
-dependências no servidor também — se você não tiver acesso SSH na KingHost para
-rodar `composer update` lá, o caminho mais simples é: rodar `composer update` aqui
-no seu computador (o comando do passo 1) e depois subir a pasta `vendor/` inteira,
-atualizada, para a KingHost via FileZilla também (ela é grande, pode demorar um
-pouco para subir).
+Os passos são os mesmos de antes (FileZilla, apontar para `public`, etc.). Depois de
+subir os arquivos novos, rode no servidor (ou peça ajuda, se não tiver SSH):
+
+```bash
+php artisan migrate --force
+```
+
+Não precisa rodar `composer install`/`update` nesta etapa (nenhum pacote novo foi
+adicionado).
 
 ## 5. Estrutura (o que é novo nesta etapa)
 
 ```
-app/Observers/PedidoObserver               Dispara o e-mail quando o status muda
-app/Mail/PedidoStatusAtualizado            E-mail avisando a ótica da mudança
-app/Http/Controllers/Admin/PedidoPdfController   Gera o PDF (lado do painel)
-resources/views/pdf/ordem-servico.blade.php      Modelo do PDF da ordem de serviço
-resources/views/emails/pedido-status-atualizado.blade.php
+app/Filament/Widgets/FaturamentoOverview        Números do mês, no dashboard
+app/Filament/Widgets/FaturamentoPorDiaChart     Gráfico dos últimos 14 dias
+app/Filament/Pages/RelatorioFinanceiro          Página "Relatório financeiro"
+app/Http/Controllers/Admin/RelatorioFinanceiroController   Exportação do CSV
+resources/views/filament/pages/relatorio-financeiro.blade.php
 ```
 
-O método `pdf()` que gera o PDF do lado da ótica está no mesmo
-`PedidosController` da Etapa 4.
+A ação "Registrar pagamento" e a seção "Financeiro" ficam no mesmo
+`PedidoResource` das etapas anteriores.
 
 ## Próximas etapas
 
-6. Financeiro e relatórios
 7. Deploy final e ajustes

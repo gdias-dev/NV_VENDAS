@@ -27,6 +27,20 @@ class Pedido extends Model
         self::STATUS_CANCELADO => 'Cancelado',
     ];
 
+    public const FORMA_DINHEIRO = 'dinheiro';
+    public const FORMA_PIX = 'pix';
+    public const FORMA_CARTAO = 'cartao';
+    public const FORMA_BOLETO = 'boleto';
+    public const FORMA_OUTRO = 'outro';
+
+    public const FORMAS_PAGAMENTO = [
+        self::FORMA_DINHEIRO => 'Dinheiro',
+        self::FORMA_PIX => 'Pix',
+        self::FORMA_CARTAO => 'Cartão',
+        self::FORMA_BOLETO => 'Boleto',
+        self::FORMA_OUTRO => 'Outro',
+    ];
+
     protected $fillable = [
         'otica_id',
         'cliente_nome',
@@ -50,6 +64,9 @@ class Pedido extends Model
         'preco_montagem',
         'preco_total',
         'status',
+        'pago',
+        'pago_em',
+        'forma_pagamento',
         'observacoes',
     ];
 
@@ -70,6 +87,8 @@ class Pedido extends Model
             'preco_tratamentos' => 'decimal:2',
             'preco_montagem' => 'decimal:2',
             'preco_total' => 'decimal:2',
+            'pago' => 'boolean',
+            'pago_em' => 'date',
         ];
     }
 
@@ -101,5 +120,10 @@ class Pedido extends Model
     public function isCancelado(): bool
     {
         return $this->status === self::STATUS_CANCELADO;
+    }
+
+    public function formaPagamentoLabel(): ?string
+    {
+        return $this->forma_pagamento ? (self::FORMAS_PAGAMENTO[$this->forma_pagamento] ?? $this->forma_pagamento) : null;
     }
 }
