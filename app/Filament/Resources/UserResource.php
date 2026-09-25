@@ -28,9 +28,32 @@ class UserResource extends Resource
     protected static ?int $navigationSort = 1;
 
     /**
-     * Só administradores gerenciam usuários do painel.
+     * Só administradores gerenciam usuários do painel. Isso precisa ser
+     * checado em CADA ação (não só na listagem/menu), senão um usuário
+     * "produção" que descobrisse a URL direta (ex.: /admin/users/1/edit)
+     * conseguiria se editar e virar administrador.
      */
     public static function canViewAny(): bool
+    {
+        return (bool) auth()->user()?->isAdmin();
+    }
+
+    public static function canCreate(): bool
+    {
+        return (bool) auth()->user()?->isAdmin();
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return (bool) auth()->user()?->isAdmin();
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return (bool) auth()->user()?->isAdmin();
+    }
+
+    public static function canDeleteAny(): bool
     {
         return (bool) auth()->user()?->isAdmin();
     }

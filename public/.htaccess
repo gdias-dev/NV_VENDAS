@@ -24,6 +24,13 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
+# Cabeçalhos de segurança (proteção extra contra clickjacking e "MIME sniffing")
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
 # Cache de arquivos estáticos
 <IfModule mod_expires.c>
     ExpiresActive On

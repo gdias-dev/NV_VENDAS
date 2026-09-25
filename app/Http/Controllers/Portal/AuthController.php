@@ -13,11 +13,32 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class AuthController extends Controller
 {
+    /**
+     * Máximo de tentativas de login erradas antes de bloquear temporariamente.
+     */
+    protected const MAX_TENTATIVAS_LOGIN = 5;
+
+    /**
+     * Tempo de bloqueio, em segundos, depois de estourar o máximo de tentativas.
+     */
+    protected const BLOQUEIO_LOGIN_SEGUNDOS = 900; // 15 minutos
+
+    /**
+     * Chave do limitador: combina e-mail + IP, pra bloquear a combinação
+     * "essa pessoa tentando esse e-mail" sem deixar que só o e-mail (sem o IP)
+     * seja usado por terceiros pra travar a conta de outra pessoa de propósito.
+     */
+    protected function chaveLimiteLogin(Request $request): string
+    {
+        return Str::transliterate(Str::lower((string) $request->input('email')).'|'.$request->ip());
+    }
     public function show(): View|RedirectResponse
     {
         if (Auth::guard('otica')->check()) {
@@ -35,8 +56,18 @@ class AuthController extends Controller
         ]);
 
         $lembrar = $request->boolean('lembrar');
+        $chaveLimite = $this->chaveLimiteLogin($request);
+
+        if (RateLimiter::tooManyAttempts($chaveLimite, self::MAX_TENTATIVAS_LOGIN)) {
+            $segundos = RateLimiter::availableIn($chaveLimite);
+
+            throw ValidationException::withMessages([
+                'email' => 'Muitas tentativas de login. Tente novamente em '.ceil($segundos / 60).' minuto(s).',
+            ]);
+        }
 
         if (Auth::guard('otica')->attempt($credenciais, $lembrar)) {
+            RateLimiter::clear($chaveLimite);
             $request->session()->regenerate();
 
             /** @var Otica $otica */
@@ -59,10 +90,13 @@ class AuthController extends Controller
         // (admin/produção), pra quem é da equipe do laboratório não precisar
         // lembrar que o login deles fica em /admin.
         if (Auth::guard('web')->attempt($credenciais, $lembrar)) {
+            RateLimiter::clear($chaveLimite);
             $request->session()->regenerate();
 
             return redirect()->intended('/admin');
         }
+
+        RateLimiter::hit($chaveLimite, self::BLOQUEIO_LOGIN_SEGUNDOS);
 
         throw ValidationException::withMessages([
             'email' => 'E-mail ou senha incorretos.',
