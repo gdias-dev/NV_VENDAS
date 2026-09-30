@@ -31,12 +31,18 @@ Route::post('/area-das-oticas/cadastro', [PortalAuthController::class, 'register
     ->middleware('throttle:5,1')
     ->name('portal.cadastro.enviar');
 
-Route::get('/area-das-oticas/painel', [PortalPainelController::class, 'index'])->name('portal.painel');
+// Estas rotas já são protegidas por dentro dos controllers (ver
+// oticaAutenticada() em PedidosController), mas o middleware abaixo garante
+// isso também no nível da rota — uma segunda trava, caso algum código novo
+// esqueça de repetir aquela checagem.
+Route::middleware('auth:otica')->group(function (): void {
+    Route::get('/area-das-oticas/painel', [PortalPainelController::class, 'index'])->name('portal.painel');
 
-Route::get('/area-das-oticas/pedidos/novo', [PortalPedidosController::class, 'novo'])->name('portal.pedidos.novo');
-Route::get('/area-das-oticas/pedidos', [PortalPedidosController::class, 'index'])->name('portal.pedidos.index');
-Route::get('/area-das-oticas/pedidos/{pedido}', [PortalPedidosController::class, 'show'])->name('portal.pedidos.show');
-Route::get('/area-das-oticas/pedidos/{pedido}/pdf', [PortalPedidosController::class, 'pdf'])->name('portal.pedidos.pdf');
+    Route::get('/area-das-oticas/pedidos/novo', [PortalPedidosController::class, 'novo'])->name('portal.pedidos.novo');
+    Route::get('/area-das-oticas/pedidos', [PortalPedidosController::class, 'index'])->name('portal.pedidos.index');
+    Route::get('/area-das-oticas/pedidos/{pedido}', [PortalPedidosController::class, 'show'])->name('portal.pedidos.show');
+    Route::get('/area-das-oticas/pedidos/{pedido}/pdf', [PortalPedidosController::class, 'pdf'])->name('portal.pedidos.pdf');
+});
 
 // ---- PDF da ordem de serviço, para quem está logado no painel administrativo ----
 Route::middleware('auth')

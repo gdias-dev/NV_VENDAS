@@ -51,7 +51,25 @@ class Otica extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            // Dados pessoais criptografados no banco (em repouso). O e-mail
+            // fica de fora de propósito: precisa continuar buscável/único
+            // para o login funcionar.
+            'telefone' => 'encrypted',
+            'endereco' => 'encrypted',
+            'cnpj' => 'encrypted',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Como o CNPJ passa a ser criptografado (texto cifrado diferente a
+        // cada vez, mesmo pro mesmo CNPJ), não dá mais pra checar duplicado
+        // comparando a coluna direto. Mantemos, à parte, um hash (sempre
+        // igual para o mesmo CNPJ) só pra permitir a checagem de duplicado
+        // e o índice único — nunca é usado para "voltar" ao CNPJ original.
+        static::saving(function (self $otica): void {
+            $otica->cnpj_hash = filled($otica->cnpj) ? hash('sha256', $otica->cnpj) : null;
+        });
     }
 
     public function tabelaPreco(): BelongsTo

@@ -342,6 +342,29 @@ fiz com "Usuários".
    `/admin/users` e `/admin/users/create` — o sistema deve negar o acesso
    (403), mesmo digitando a URL na mão.
 
+## 10. Editar pedido pelo painel administrativo
+
+Depois do site publicado, foi adicionado um botão **"Editar pedido"** (tanto na
+listagem de Pedidos quanto na tela de detalhe de cada pedido), para corrigir um
+pedido já recebido sem precisar cancelar e pedir de novo pela ótica.
+
+**Atualizar o projeto**: baixe este zip por cima da pasta do projeto (não tem
+migration nova nem pacote novo, não precisa rodar `composer update` nem
+`php artisan migrate`).
+
+**O que dá pra editar**: lente escolhida, tratamentos (adicionar, remover ou
+trocar o preço de cada um), dados de montagem/armação (formato, clip-on,
+medidas MVA/MHA/DMA/ponte/DPA, foto da armação) e os valores (preço da lente
+por olho, tratamentos, montagem e total) — tudo em um só formulário, dividido
+em 3 seções.
+
+**O que continua sem editar direto**: dados do cliente/ótica e a receita
+(grau dos olhos) — mudar isso, na prática, é um pedido diferente. Se precisar
+corrigir isso no futuro, é só pedir.
+
+**Cancelar um pedido**: continua sendo feito pelo botão "Mudar status" →
+escolher "Cancelado" (já existia antes desta etapa).
+
 ## Próximas etapas
 
 Nenhuma — o roteiro original de 7 etapas está concluído. Qualquer ajuste ou

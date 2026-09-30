@@ -134,6 +134,16 @@ class Pedido extends Model
     protected function casts(): array
     {
         return [
+            // Dados pessoais do cliente final e do paciente/profissional,
+            // criptografados no banco (em repouso). A receita (grau dos
+            // olhos) fica de fora por ser numérica — o cast "encrypted" do
+            // Laravel não combina com cast decimal no mesmo campo.
+            'cliente_nome' => 'encrypted',
+            'cliente_telefone' => 'encrypted',
+            'paciente_iniciais' => 'encrypted',
+            'paciente_complemento' => 'encrypted',
+            'profissional_nome' => 'encrypted',
+            'profissional_crm' => 'encrypted',
             'od_esferico' => 'decimal:2',
             'od_cilindrico' => 'decimal:2',
             'od_eixo' => 'integer',

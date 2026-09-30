@@ -14,5 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Se o middleware "auth:otica" barrar uma requisição sem login,
+        // manda para a tela de login do portal (em vez do /login padrão do
+        // Laravel, que não existe neste projeto).
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+            if (in_array('otica', $e->guards(), true) && ! $request->expectsJson()) {
+                return redirect()->route('area-oticas');
+            }
+        });
     })->create();

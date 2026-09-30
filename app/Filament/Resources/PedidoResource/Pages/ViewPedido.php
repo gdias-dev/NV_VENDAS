@@ -20,6 +20,19 @@ class ViewPedido extends ViewRecord
                 ->color('gray')
                 ->url(fn (Pedido $record): string => route('admin.pedidos.pdf', $record))
                 ->openUrlInNewTab(),
+            Actions\Action::make('editarPedido')
+                ->label('Editar pedido')
+                ->icon('heroicon-o-pencil-square')
+                ->color('gray')
+                ->modalHeading('Editar pedido')
+                ->modalWidth('3xl')
+                ->form(PedidoResource::editarPedidoFormSchema())
+                ->fillForm(fn (Pedido $record): array => PedidoResource::editarPedidoFillForm($record))
+                ->action(function (Pedido $record, array $data): void {
+                    PedidoResource::editarPedidoSave($record, $data);
+                })
+                ->successNotificationTitle('Pedido atualizado')
+                ->successRedirectUrl(fn (Pedido $record): string => PedidoResource::getUrl('view', ['record' => $record])),
         ];
     }
 }

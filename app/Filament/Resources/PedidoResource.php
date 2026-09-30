@@ -3,7 +3,9 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PedidoResource\Pages;
+use App\Models\Lente;
 use App\Models\Pedido;
+use App\Models\Tratamento;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
@@ -58,9 +60,11 @@ class PedidoResource extends Resource
                     ->label('Ótica')
                     ->searchable()
                     ->sortable(),
+                // Sem ->searchable(): o nome do cliente agora é criptografado
+                // no banco, então uma busca "LIKE" não encontra mais nada.
+                // Pra achar um pedido, use o número (#id), a ótica ou o status.
                 Tables\Columns\TextColumn::make('cliente_nome')
-                    ->label('Cliente')
-                    ->searchable(),
+                    ->label('Cliente'),
                 Tables\Columns\TextColumn::make('lente_nome')
                     ->label('Lente')
                     ->toggleable(),
@@ -125,6 +129,16 @@ class PedidoResource extends Resource
                     ->action(function (Pedido $record, array $data): void {
                         $record->update($data);
                     }),
+                Tables\Actions\Action::make('editarPedido')
+                    ->label('Editar pedido')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('gray')
+                    ->modalHeading('Editar pedido')
+                    ->modalWidth('3xl')
+                    ->form(static::editarPedidoFormSchema())
+                    ->fillForm(fn (Pedido $record): array => static::editarPedidoFillForm($record))
+                    ->action(fn (Pedido $record, array $data) => static::editarPedidoSave($record, $data))
+                    ->successNotificationTitle('Pedido atualizado'),
                 Tables\Actions\Action::make('pagamento')
                     ->label(fn (Pedido $record): string => $record->pago ? 'Pagamento' : 'Registrar pagamento')
                     ->icon('heroicon-o-banknotes')
@@ -305,6 +319,175 @@ class PedidoResource extends Resource
     public static function getRelations(): array
     {
         return [];
+    }
+
+    /**
+     * Formulário usado pela ação "Editar pedido" — tanto na listagem quanto
+     * na tela de detalhe do pedido. Permite corrigir lente, tratamentos,
+     * dados de montagem/armação e os valores, para casos em que a ótica
+     * pediu errado ou o laboratório precisa ajustar algo depois de recebido.
+     */
+    public static function editarPedidoFormSchema(): array
+    {
+        return [
+            Forms\Components\Section::make('Lente e tratamentos')
+                ->columns(2)
+                ->schema([
+                    Forms\Components\Select::make('lente_id')
+                        ->label('Lente')
+                        ->options(fn (): array => Lente::where('ativo', true)->pluck('nome', 'id')->all())
+                        ->searchable()
+                        ->live()
+                        ->afterStateUpdated(function (Forms\Set $set, $state): void {
+                            $set('lente_nome', Lente::find($state)?->nome);
+                        })
+                        ->required(),
+                    Forms\Components\Hidden::make('lente_nome'),
+                    Forms\Components\Repeater::make('tratamentos')
+                        ->label('Tratamentos')
+                        ->columnSpanFull()
+                        ->columns(2)
+                        ->addActionLabel('Adicionar tratamento')
+                        ->defaultItems(0)
+                        ->schema([
+                            Forms\Components\Select::make('tratamento_id')
+                                ->label('Tratamento')
+                                ->options(fn (): array => Tratamento::where('ativo', true)->pluck('nome', 'id')->all())
+                                ->searchable()
+                                ->live()
+                                ->afterStateUpdated(function (Forms\Set $set, $state): void {
+                                    $set('tratamento_nome', Tratamento::find($state)?->nome);
+                                })
+                                ->required(),
+                            Forms\Components\Hidden::make('tratamento_nome'),
+                            Forms\Components\TextInput::make('preco')
+                                ->label('Preço')
+                                ->numeric()
+                                ->prefix('R$')
+                                ->required(),
+                        ]),
+                ]),
+
+            Forms\Components\Section::make('Montagem e armação')
+                ->columns(2)
+                ->schema([
+                    Forms\Components\Toggle::make('com_montagem')
+                        ->label('Com montagem')
+                        ->live()
+                        ->columnSpanFull(),
+                    Forms\Components\Select::make('montagem_formato_armacao')
+                        ->label('Formato da armação')
+                        ->options(Pedido::FORMATOS_ARMACAO)
+                        ->live()
+                        ->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\FileUpload::make('montagem_foto_armacao')
+                        ->label('Foto da armação')
+                        ->image()
+                        ->disk('public')
+                        ->directory('armacoes')
+                        ->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem') && $get('montagem_formato_armacao') === Pedido::FORMATO_UPLOAD),
+                    Forms\Components\Select::make('montagem_clipon')
+                        ->label('Clip-on')
+                        ->options(Pedido::CLIPON_OPTIONS)
+                        ->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\Toggle::make('montagem_enviar_armacao')
+                        ->label('Ótica vai enviar a armação')
+                        ->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\TextInput::make('montagem_mva')->label('MVA')->numeric()->suffix('mm')->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\TextInput::make('montagem_mha')->label('MHA')->numeric()->suffix('mm')->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\TextInput::make('montagem_dma')->label('DMA')->numeric()->suffix('mm')->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\TextInput::make('montagem_ponte')->label('Ponte')->numeric()->suffix('mm')->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\TextInput::make('montagem_dpa')->label('DPA')->numeric()->suffix('mm')->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\TextInput::make('montagem_diametro_od')->label('Diâmetro O.D.')->numeric()->suffix('mm')->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\TextInput::make('montagem_diametro_oe')->label('Diâmetro O.E.')->numeric()->suffix('mm')->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                    Forms\Components\Textarea::make('montagem_observacoes')
+                        ->label('Observações da montagem')
+                        ->rows(2)
+                        ->columnSpanFull()
+                        ->visible(fn (Forms\Get $get): bool => (bool) $get('com_montagem')),
+                ]),
+
+            Forms\Components\Section::make('Valores')
+                ->columns(2)
+                ->schema([
+                    Forms\Components\TextInput::make('preco_lente_od')->label('Lente (OD)')->numeric()->prefix('R$')->required(),
+                    Forms\Components\TextInput::make('preco_lente_oe')->label('Lente (OE)')->numeric()->prefix('R$')->required(),
+                    Forms\Components\TextInput::make('preco_tratamentos')->label('Tratamentos')->numeric()->prefix('R$')->required(),
+                    Forms\Components\TextInput::make('preco_montagem')->label('Montagem')->numeric()->prefix('R$')->required(),
+                    Forms\Components\TextInput::make('preco_total')->label('Total')->numeric()->prefix('R$')->required()->columnSpanFull(),
+                ]),
+        ];
+    }
+
+    public static function editarPedidoFillForm(Pedido $record): array
+    {
+        return [
+            'lente_id' => $record->lente_id,
+            'lente_nome' => $record->lente_nome,
+            'tratamentos' => $record->tratamentos->map(fn (\App\Models\PedidoTratamento $t): array => [
+                'tratamento_id' => $t->tratamento_id,
+                'tratamento_nome' => $t->tratamento_nome,
+                'preco' => $t->preco,
+            ])->all(),
+            'com_montagem' => $record->com_montagem,
+            'montagem_formato_armacao' => $record->montagem_formato_armacao,
+            'montagem_foto_armacao' => $record->montagem_foto_armacao,
+            'montagem_clipon' => $record->montagem_clipon,
+            'montagem_enviar_armacao' => $record->montagem_enviar_armacao,
+            'montagem_mva' => $record->montagem_mva,
+            'montagem_mha' => $record->montagem_mha,
+            'montagem_dma' => $record->montagem_dma,
+            'montagem_ponte' => $record->montagem_ponte,
+            'montagem_dpa' => $record->montagem_dpa,
+            'montagem_diametro_od' => $record->montagem_diametro_od,
+            'montagem_diametro_oe' => $record->montagem_diametro_oe,
+            'montagem_observacoes' => $record->montagem_observacoes,
+            'preco_lente_od' => $record->preco_lente_od,
+            'preco_lente_oe' => $record->preco_lente_oe,
+            'preco_tratamentos' => $record->preco_tratamentos,
+            'preco_montagem' => $record->preco_montagem,
+            'preco_total' => $record->preco_total,
+        ];
+    }
+
+    public static function editarPedidoSave(Pedido $record, array $data): void
+    {
+        $record->update([
+            'lente_id' => $data['lente_id'] ?? null,
+            'lente_nome' => $data['lente_nome'] ?? null,
+            'com_montagem' => (bool) ($data['com_montagem'] ?? false),
+            'montagem_formato_armacao' => ($data['com_montagem'] ?? false) ? ($data['montagem_formato_armacao'] ?? null) : null,
+            'montagem_foto_armacao' => ($data['com_montagem'] ?? false) ? ($data['montagem_foto_armacao'] ?? null) : null,
+            'montagem_clipon' => ($data['com_montagem'] ?? false) ? ($data['montagem_clipon'] ?? null) : null,
+            'montagem_enviar_armacao' => ($data['com_montagem'] ?? false) ? (bool) ($data['montagem_enviar_armacao'] ?? false) : false,
+            'montagem_mva' => ($data['com_montagem'] ?? false) ? ($data['montagem_mva'] ?? null) : null,
+            'montagem_mha' => ($data['com_montagem'] ?? false) ? ($data['montagem_mha'] ?? null) : null,
+            'montagem_dma' => ($data['com_montagem'] ?? false) ? ($data['montagem_dma'] ?? null) : null,
+            'montagem_ponte' => ($data['com_montagem'] ?? false) ? ($data['montagem_ponte'] ?? null) : null,
+            'montagem_dpa' => ($data['com_montagem'] ?? false) ? ($data['montagem_dpa'] ?? null) : null,
+            'montagem_diametro_od' => ($data['com_montagem'] ?? false) ? ($data['montagem_diametro_od'] ?? null) : null,
+            'montagem_diametro_oe' => ($data['com_montagem'] ?? false) ? ($data['montagem_diametro_oe'] ?? null) : null,
+            'montagem_observacoes' => ($data['com_montagem'] ?? false) ? ($data['montagem_observacoes'] ?? null) : null,
+            'preco_lente_od' => $data['preco_lente_od'] ?? 0,
+            'preco_lente_oe' => $data['preco_lente_oe'] ?? 0,
+            'preco_tratamentos' => $data['preco_tratamentos'] ?? 0,
+            'preco_montagem' => $data['preco_montagem'] ?? 0,
+            'preco_total' => $data['preco_total'] ?? 0,
+        ]);
+
+        $record->tratamentos()->delete();
+
+        foreach ($data['tratamentos'] ?? [] as $tratamento) {
+            if (empty($tratamento['tratamento_id'])) {
+                continue;
+            }
+
+            $record->tratamentos()->create([
+                'tratamento_id' => $tratamento['tratamento_id'],
+                'tratamento_nome' => $tratamento['tratamento_nome'] ?? Tratamento::find($tratamento['tratamento_id'])?->nome,
+                'preco' => $tratamento['preco'] ?? 0,
+            ]);
+        }
     }
 
     public static function getPages(): array

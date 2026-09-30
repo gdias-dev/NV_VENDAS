@@ -122,7 +122,18 @@ class AuthController extends Controller
         $dados = $request->validate([
             'nome_fantasia' => ['required', 'string', 'max:255'],
             'razao_social' => ['nullable', 'string', 'max:255'],
-            'cnpj' => ['nullable', 'string', 'max:18', 'unique:oticas,cnpj'],
+            // O CNPJ é criptografado no banco, então uma checagem "unique"
+            // direta na coluna não funciona mais (o texto cifrado nunca se
+            // repete, mesmo pro mesmo CNPJ). Comparamos pelo hash, que é
+            // sempre igual para o mesmo número.
+            'cnpj' => [
+                'nullable', 'string', 'max:18',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (filled($value) && Otica::where('cnpj_hash', hash('sha256', $value))->exists()) {
+                        $fail('Este CNPJ já está cadastrado.');
+                    }
+                },
+            ],
             'email' => ['required', 'email', 'max:255', 'unique:oticas,email'],
             'telefone' => ['nullable', 'string', 'max:30'],
             'endereco' => ['nullable', 'string', 'max:255'],
